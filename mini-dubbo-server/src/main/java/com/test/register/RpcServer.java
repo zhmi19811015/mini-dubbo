@@ -4,6 +4,7 @@ import com.sun.corba.se.impl.interceptors.PICurrent;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -54,11 +55,11 @@ public class RpcServer {
             //注册服务名称和服务地址
             iServiceRegister.register(servcieName,serverAddress);
         }
-        try{
+
             //监听端口、进行与客户端通讯 netty
-            EventLoopGroup boosGroup = new NioEventLoopGroup();
-            EventLoopGroup workerGroup = new NioEventLoopGroup();
-            //启动netty
+        EventLoopGroup boosGroup = new NioEventLoopGroup();
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        try{  //启动netty
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(boosGroup,workerGroup);
             bootstrap.channel(NioServerSocketChannel.class);
@@ -67,24 +68,30 @@ public class RpcServer {
                 protected void initChannel(SocketChannel channel) throws Exception {
                     //业务代码
                     ChannelPipeline pipeline = channel.pipeline();
-                    //关注handler
-                    pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE,0,4));
-                    pipeline.addLast(new LengthFieldPrepender(4));
-                    pipeline.addLast("encoder",new ObjectEncoder());
-                    pipeline.addLast("decoder",new ObjectDecoder(Integer.MAX_VALUE, ClassResolvers.cacheDisabled(null)));
+//                    //关注handler
+//                    pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE,0,4));
+//                    pipeline.addLast(new LengthFieldPrepender(4));
+                    pipeline.addLast(new ObjectEncoder());
+                    pipeline.addLast(new ObjectDecoder(Integer.MAX_VALUE, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));
                     //业务handler
                     pipeline.addLast(new RpcServerHandler(handlerMap));
                 }
-            }).option(ChannelOption.SO_BACKLOG,128).childOption(ChannelOption.SO_KEEPALIVE,true);
+            }).option(ChannelOption.SO_BACKLOG,1024);
+            bootstrap.childOption(ChannelOption.SO_KEEPALIVE,true);
             //netty 端口
             String[] addrs = serverAddress.split(":");
             String ip = addrs[0];
             int port = Integer.parseInt(addrs[1]);
-            ChannelFuture future = bootstrap.bind(ip,port).sync();
+            ChannelFuture future = bootstrap.bind(port).sync();
             System.out.println("netty服务器启动成功，等待客户端的连接");
             future.channel().closeFuture().sync();
+            System.out.println("netty-====");
         }catch (Exception e){
             e.printStackTrace();
+        }
+        finally {
+            workerGroup.shutdownGracefully();
+            boosGroup.shutdownGracefully();
         }
 
 

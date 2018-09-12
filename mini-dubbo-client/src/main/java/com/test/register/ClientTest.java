@@ -18,7 +18,7 @@ public class ClientTest {
         //动态代理
         RpcClientProxy rpcClientProxy = new RpcClientProxy(iServiceDiscovery);
         TestService testService = rpcClientProxy.create(TestService.class);
-        String str = testService.hello("zhangming");
+        String str = testService.hello("lisi");
         System.out.println(str);
 
     }

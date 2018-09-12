@@ -8,6 +8,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.serialization.ClassResolvers;
@@ -58,29 +59,39 @@ public class RpcClientProxy {
                 //netty 连接 进行交互
                 RpcProxyHandler rpcProxyHandler = new RpcProxyHandler();
                 EventLoopGroup boosGroup = new NioEventLoopGroup();
-                Bootstrap bootstrap = new Bootstrap();
-                bootstrap.group(boosGroup);
-                bootstrap.channel(NioServerSocketChannel.class).option(ChannelOption.TCP_NODELAY,true).handler(new ChannelInitializer<SocketChannel>(){
-                    @Override
-                    protected void initChannel(SocketChannel socketChannel) throws Exception {
-                        //业务代码
-                        ChannelPipeline pipeline = socketChannel.pipeline();
-                        //关注handler
-                        pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE,0,4));
-                        pipeline.addLast(new LengthFieldPrepender(4));
-                        pipeline.addLast("encoder",new ObjectEncoder());
-                        pipeline.addLast("decoder",new ObjectDecoder(Integer.MAX_VALUE, ClassResolvers.cacheDisabled(null)));
-                        //业务handler
-                        pipeline.addLast(rpcProxyHandler);
-                    }
-                });
-                //连接服务器
-                ChannelFuture future = bootstrap.connect(ip,port).sync();
-                //将封装的对象写
-                future.channel().writeAndFlush(rpcRequest);
-                future.channel().closeFuture().sync();
+                try{
+                    Bootstrap bootstrap = new Bootstrap();
+                    bootstrap.group(boosGroup);
+                    bootstrap.channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY,true).handler(new ChannelInitializer<SocketChannel>(){
+                        @Override
+                        protected void initChannel(SocketChannel socketChannel) throws Exception {
+                            //业务代码
+                            ChannelPipeline pipeline = socketChannel.pipeline();
+//                        //关注handler
+//                            pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE,0,4));
+//                            pipeline.addLast(new LengthFieldPrepender(4));
+                            pipeline.addLast(new ObjectEncoder());
+                            pipeline.addLast(new ObjectDecoder(Integer.MAX_VALUE, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));
+                            //业务handler
+                            pipeline.addLast(rpcProxyHandler);
+                        }
+                    });
+                    //连接服务器
+                    ChannelFuture future = bootstrap.connect(ip,port).sync();
+                    //将封装的对象写
+                    future.channel().writeAndFlush(rpcRequest);
+                    future.channel().closeFuture().sync();
 
-                return rpcProxyHandler.getResponese();
+                    return rpcProxyHandler.getResponese();
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+                finally {
+                    boosGroup.shutdownGracefully();
+                    System.out.println("客户端优雅的释放了线程资源...");
+                }
+                return null;
+
             }
         });
     }

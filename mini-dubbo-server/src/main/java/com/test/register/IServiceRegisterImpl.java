@@ -23,14 +23,18 @@ public class IServiceRegisterImpl implements IServiceRegister {
     @Override
     public void register(String serviceName, String serviceAddress) {
         String servicePath = ZkConfig.ZK_REGISTER_PATH+"/"+serviceName;
-        //判断节点是否存在，不存在创建
+
         try{
+            //判断节点是否存在，不存在创建
             if (curatorFramework.checkExists().forPath(servicePath) == null){
                 curatorFramework.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(servicePath,"0".getBytes());
             }
             System.out.println("serviceName创建成功："+servicePath);
             String addressPath = servicePath+"/"+serviceAddress;
-            String addNode = curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(addressPath,"0".getBytes());
+            String addNode = "";
+            if (curatorFramework.checkExists().forPath(addressPath) == null){
+                addNode = curatorFramework.create().withMode(CreateMode.PERSISTENT).forPath(addressPath,"0".getBytes());
+            }
             System.out.println("serviceAddress创建成功："+addNode);
         }catch (Exception e){
             e.printStackTrace();

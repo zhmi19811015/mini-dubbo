@@ -1,6 +1,7 @@
 package com.test.register;
 
 import com.test.bean.RpcRequest;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -10,7 +11,7 @@ import java.util.Map;
 
 /**
  * @Author zhangming
- * @Date 2018/9/7 22:26
+ * @Date 2018/9/7 22:26 ChannelInboundHandlerAdapter
  **/
 public class RpcServerHandler extends ChannelInboundHandlerAdapter {
     private Map<String,Object> handlerMap = new HashMap<>();
@@ -27,7 +28,6 @@ public class RpcServerHandler extends ChannelInboundHandlerAdapter {
         //msg 客户端数据
         //ctx 向客户端写数据
         RpcRequest rpcRequest = (RpcRequest)msg;
-        System.out.println("接受的客户端信息："+rpcRequest);
         Object result = new Object();
         //根据这个reques调用server的对应的方法
        if(handlerMap.containsKey(rpcRequest.getClassName())){
@@ -44,5 +44,22 @@ public class RpcServerHandler extends ChannelInboundHandlerAdapter {
 
     }
 
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        String remoteAddress = ctx.channel().remoteAddress().toString();
+        System.out.println("客户端IP：" + remoteAddress);
+    }
 
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("channelActive" );
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+            throws Exception {
+        cause.printStackTrace();
+        System.out.println("exceptionCaught" );
+        ctx.close();
+    }
 }
