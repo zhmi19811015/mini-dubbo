@@ -19,7 +19,7 @@ public class ClientTest {
         RpcClientProxy rpcClientProxy = new RpcClientProxy(iServiceDiscovery);
         TestService testService = rpcClientProxy.create(TestService.class);
         String str = testService.hello("lisi");
-        System.out.println(str);
+        System.out.println("服务器端返回信息："+str);
 
     }
 }

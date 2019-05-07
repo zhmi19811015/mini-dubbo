@@ -38,7 +38,7 @@ public class RpcServerHandler extends ChannelInboundHandlerAdapter {
            result =  method.invoke(clazz,rpcRequest.getParams());
        }
        ctx.write(result);
-        System.out.println("返回客户端信息："+result);
+       System.out.println("返回客户端信息："+result);
        ctx.flush();
        ctx.close();
 

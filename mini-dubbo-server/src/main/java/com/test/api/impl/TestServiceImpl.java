@@ -11,6 +11,6 @@ import com.test.register.RpcService;
 public class TestServiceImpl implements TestService {
     @Override
     public String hello(String name) {
-        return "Hello:"+name;
+        return "Hello,章明欢迎您:"+name;
     }
 }
